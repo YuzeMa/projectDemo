@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
+    <Folder Include="Model\" />
+    <Folder Include="Model\User\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MySql.Data" Version="8.0.11" />
+    <PackageReference Include="MySql.Data.EntityFrameworkCore" Version="8.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.8" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="3.0.0" />
+  </ItemGroup>
+<!-- 
+<ItemGroup>
+  <DotNetCliToolReference Include="Microsoft.EntityFrameworkCore.Tools.DotNet" Version="2.0.0" />
+</ItemGroup> -->
+
+
+  <!-- <ItemGroup>
+    <Compile Remove="Controllers\ValuesController.cs" />
+    <Compile Remove="Migrations\20180904143310_Init.cs" />
+  </ItemGroup> -->
+<ItemGroup>
+  <Compile Remove="Controllers\ValuesController.cs" />
+  <Compile Remove="Controllers\StudentsController %28copy%29.cs" />
+  <Compile Remove="Model\ICourseDataStore.cs" />
+  <Compile Remove="Model\CourseDataStore.cs" />
+  <Compile Remove="Model\IStudentDataStore.cs" />
+  <Compile Remove="Model\IStudentsCoursesDataStore.cs" />
+  <Compile Remove="Model\StudentDataStore.cs" />
+  <Compile Remove="Model\StudentsCoursesDataStore.cs" />
+  <Compile Remove="Migrations\20180922061306_init.Designer.cs" />
+  <Compile Remove="Migrations\20180922061306_init.cs" />
+  <Compile Remove="Migrations\20180922100544_new.cs" />
+</ItemGroup>
+</Project>
