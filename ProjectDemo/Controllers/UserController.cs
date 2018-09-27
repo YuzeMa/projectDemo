@@ -4,11 +4,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using ProjectDemo.Model.User;
-
-// log in and sign up
+using Microsoft.AspNetCore.Authorization;
 
 namespace ProjectDemo.Controllers
 {
+    [Authorize]
     [Route("api/Users")]
     public class UserController : Controller
     {
@@ -17,7 +17,34 @@ namespace ProjectDemo.Controllers
         {
             _userDataStore = userDataStore;
         }
+        //Admin权限获取全部学生
+        [Authorize(Roles = "Admin")]
+        [HttpGet("admin")]
+        public IActionResult AdminGet()
+        {
+            var result = _userDataStore.GetAllUsers();
+          return Ok(result);
+        }
 
+        //[Authorize(Roles = "User")]
+        //[HttpGet("user")]
+        //public IActionResult Get()
+        //{
+        //  var userName = this.User.Identity.Name;
+        //    return Ok(userName + "from User");
+        //}
+
+      
+        [HttpGet]
+        public IActionResult GetUserName()
+        {
+
+            string result = this.User.Identity.Name;
+
+            return Ok(result);
+        }
+
+        [AllowAnonymous]
         [HttpPost("LogIn")]
         public IActionResult LogIn([FromBody] LoginDto loginDto)
         {
@@ -32,11 +59,11 @@ namespace ProjectDemo.Controllers
             return Ok(result);
         }
 
-
-        [HttpPost]
+        [AllowAnonymous]
+        [HttpPost("SignUp")]
         public IActionResult SignUp([FromBody] SignUpDto signUpDto)
         {
-            UserDetail userDetail = new UserDetail(){Account = signUpDto.Account,Phone = signUpDto.Phone,Password = signUpDto.Password,Email =signUpDto.Email};
+            UserDetail userDetail = new UserDetail(){UserType = signUpDto.UserType,Account = signUpDto.Account,Phone = signUpDto.Phone,Password = signUpDto.Password,Name =signUpDto.Name};
             var result = _userDataStore.SignUp(userDetail);
 
             return Ok(result);

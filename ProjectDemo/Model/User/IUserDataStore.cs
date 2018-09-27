@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace ProjectDemo.Model.User
 {
@@ -6,5 +7,6 @@ namespace ProjectDemo.Model.User
     {
         string LogIn(string account, string password, string verificationNumber);
         string SignUp(UserDetail userDetail);
+        IEnumerable <UserDetail> GetAllUsers();
     }
 }

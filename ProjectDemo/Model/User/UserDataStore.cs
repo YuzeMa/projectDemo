@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -22,10 +25,15 @@ namespace ProjectDemo.Model.User
             _schoolDBContext = schoolDBContext;
         }
 
+        public IEnumerable<UserDetail> GetAllUsers()
+        {
+            return _schoolDBContext.Users.ToList();
+        }
+
         public string LogIn(string account, string password, string verificationNumber)
         {
             var users = _schoolDBContext.Users.ToList();
-            int selectedUserId = 0;
+            int selectedUserId = -1;
             foreach (var user in users)
             {
                 if(user.Account == account)
@@ -59,10 +67,25 @@ namespace ProjectDemo.Model.User
             }
             else
             {
-                return "welcom back! Login successful.";
+                //生成token
+                var user = _schoolDBContext.Users.Find(selectedUserId);
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.ASCII.GetBytes("ThisissercertKeyforFullStackWebAPIDEMO");
+                var tokenDescriptor = new SecurityTokenDescriptor
+                 {
+                     Subject = new ClaimsIdentity(new Claim[]
+                     {
+                         new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                         new Claim(ClaimTypes.Name, user.Name),
+                         new Claim(ClaimTypes.Role, user.UserType)
+                     }),
+                     Expires = DateTime.UtcNow.AddDays(7),
+                     SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                 };
+                 var token = tokenHandler.CreateToken(tokenDescriptor);
+                string stringToken = tokenHandler.WriteToken(token);
+                return stringToken + "    is ur token";
             }
-
-
         }
 
 
@@ -115,6 +138,13 @@ namespace ProjectDemo.Model.User
 
 
                 webClient.Headers.Clear();
+                webClient.Encoding = Encoding.UTF8;
+                webClient.Headers.Add(HttpRequestHeader.Accept, "application/json");
+                webClient.Headers.Add(HttpRequestHeader.ContentType, "application/json");
+                webClient.Headers.Add(HttpRequestHeader.Authorization, "Bearer " + token);
+                webClient.UploadString("https://tapi.telstra.com/v2/messages/provisioning/subscriptions", "{}");
+
+                webClient.Headers.Clear();
                 webClient.UseDefaultCredentials = true;
                 webClient.Encoding = Encoding.UTF8;
                 webClient.Headers.Add(HttpRequestHeader.Accept, "application/json");
@@ -128,7 +158,7 @@ namespace ProjectDemo.Model.User
                 };
 
                 string requestJson = JsonConvert.SerializeObject(postData);
-                string response = webClient.UploadString("https://tapi.telstra.com/v2/messages/sms", requestJson);
+                webClient.UploadString("https://tapi.telstra.com/v2/messages/sms", requestJson);
                 return "Success! Please activate your account by sending userId along with Verification Number";
 
             }

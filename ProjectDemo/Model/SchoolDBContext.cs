@@ -67,8 +67,8 @@ namespace ProjectDemo.Model
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            var connectionString = "server=13.54.17.147;userid=lms_teamcroot;pwd=password;port=3306;database=lms_teamc;sslmode=none";
-            //var connectionString = "server=localhost;userid=root;pwd=Ma950522;port=3306;database=lms_teamc;sslmode=none";
+            var connectionString = "server=localhost;userid=root;pwd=Ma950522;port=3306;database=projectTest3;sslmode=none";
+            //var connectionString = "server=54.252.222.91;userid=yuzema_test;pwd=Ma950522;port=3306;database=database_test;sslmode=none";
             optionsBuilder.UseMySQL(connectionString);
             base.OnConfiguring(optionsBuilder);
         }
