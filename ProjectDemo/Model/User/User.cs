@@ -11,5 +11,6 @@ namespace ProjectDemo.Model.User
         public string Phone { get; set; }
         public int Status { get; set; }
         public string VerificationNumber { get; set; }
+        public DateTime VNExpiredDate { get; set; }
     }
 }

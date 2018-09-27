@@ -53,6 +53,14 @@ namespace ProjectDemo.Model.User
             }
             else if (selectedUser.Status == 0)
             {
+                DateTime timeNow = DateTime.Now;
+                if (timeNow > selectedUser.VNExpiredDate)
+                {
+                    _schoolDBContext.Users.Remove(selectedUser);
+                    _schoolDBContext.SaveChanges();
+                    return "Expired, Please Sign Up Again!";
+                }
+
                 if(verificationNumber == selectedUser.VerificationNumber)
                 {
                     selectedUser.Status = 1;
@@ -109,12 +117,14 @@ namespace ProjectDemo.Model.User
                 return "Error! Please enter correct phone number. Your enter "+ userDetail.Phone.ToString();
             }
             string verificationNumber = VerificationNumberGenerator.Generate();
-            
+            DateTime expiredDateTime = DateTime.Now.AddMinutes(10.0);
+
             userDetail.Id = 0;
             userDetail.Account = userDetail.Account.ToLower();
             userDetail.Password = userDetail.Password.ToLower();
             userDetail.Status = 0;
             userDetail.VerificationNumber = verificationNumber;
+            userDetail.VNExpiredDate = expiredDateTime;
             _schoolDBContext.Users.Add(userDetail);
             _schoolDBContext.SaveChanges();
 
@@ -154,7 +164,7 @@ namespace ProjectDemo.Model.User
                 PostDataDto postData = new PostDataDto()
                 {
                     to = userDetail.Phone,
-                    body = "Your Verification Number is " + verificationNumber
+                    body = "Your Verification Number is " + verificationNumber + "\r\n Expired By " + expiredDateTime.ToString()
                 };
 
                 string requestJson = JsonConvert.SerializeObject(postData);
