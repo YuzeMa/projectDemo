@@ -159,9 +159,10 @@ namespace ProjectDemo.Model.User
                     return "Account not exist";
                 }
             }
-
             UserDetail selectedUser = _schoolDBContext.Users.Find(selectedUserId);
-            if (selectedUser == null || selectedUser.Password != password)
+            var salt = selectedUser.Salt;
+            var inputPassword = PSWEncryption(password, salt);
+            if (selectedUser == null || selectedUser.Password != inputPassword)
             {
                 return "user not exist or wrong password";
             }
@@ -231,19 +232,54 @@ namespace ProjectDemo.Model.User
             {
                 return "Error! Please enter correct phone number. Your enter "+ userDetail.Phone.ToString();
             }
+
+
+
             string verificationNumber = VerificationNumberGenerator.Generate();
             DateTime expiredDateTime = DateTime.Now.AddMinutes(10.0);
-
+            bool result = SendMessage(userDetail.Phone, verificationNumber, expiredDateTime);
+            if(result==false)
+            {
+                return "Error! while sending message! ";
+            }
             userDetail.Id = 0;
             userDetail.Account = userDetail.Account.ToLower();
-            userDetail.Password = userDetail.Password.ToLower();
+            string salt = GetSalt();
+            userDetail.Salt = salt;
+            userDetail.Password = PSWEncryption(userDetail.Password.ToLower(), salt);
             userDetail.Phone_Status = 0;
             userDetail.VerificationNumber = verificationNumber;
             userDetail.VNExpiredDate = expiredDateTime;
             _schoolDBContext.Users.Add(userDetail);
             _schoolDBContext.SaveChanges();
+            return "Success! Please activate your account by sending userId along with Verification Number";
+
+        }
 
 
+        private string GetSalt ()
+        {
+            // random salt 
+            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider(); 
+            byte[] saltBytes = new byte[36]; 
+            rng.GetNonZeroBytes(saltBytes); 
+            string salt = Convert.ToBase64String(saltBytes);
+            return salt;
+        }
+
+        private string PSWEncryption(string psw, string salt)
+
+        {
+
+            byte[] passwordAndSaltBytes = Encoding.UTF8.GetBytes(psw + salt);
+            byte[] hashBytes = new SHA256Managed().ComputeHash(passwordAndSaltBytes);
+
+            string hashString = Convert.ToBase64String(hashBytes);
+            return hashString;
+        }
+
+        private static bool SendMessage(string phone, string verificationNumber, DateTime expiredDateTime)
+        {
             try
             {
                 var webClient = new WebClient();
@@ -274,25 +310,22 @@ namespace ProjectDemo.Model.User
                 webClient.Encoding = Encoding.UTF8;
                 webClient.Headers.Add(HttpRequestHeader.Accept, "application/json");
                 webClient.Headers.Add(HttpRequestHeader.ContentType, "application/json");
-                webClient.Headers.Add(HttpRequestHeader.Authorization, "Bearer "+token);
+                webClient.Headers.Add(HttpRequestHeader.Authorization, "Bearer " + token);
 
                 PostDataDto postData = new PostDataDto()
                 {
-                    to = userDetail.Phone,
+                    to = phone,
                     body = "Your Verification Number is " + verificationNumber + "\r\n Expired By " + expiredDateTime.ToString()
                 };
 
                 string requestJson = JsonConvert.SerializeObject(postData);
                 webClient.UploadString("https://tapi.telstra.com/v2/messages/sms", requestJson);
-                return "Success! Please activate your account by sending userId along with Verification Number";
-
+                return true;
             }
-            catch (Exception e)
+            catch
             {
-                return e.Message;
+                return false;
             }
-
-
         }
 
     }
