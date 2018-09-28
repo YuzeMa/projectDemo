@@ -107,7 +107,7 @@ namespace ProjectDemo.Model.User
         {
 
             MailMessage mail = new MailMessage();
-            mail.From = new MailAddress("yuzema1995@gmail.com");
+            mail.From = new MailAddress("tuscmedia.au@gmail.com");
 
             // The important part -- configuring the SMTP client
             SmtpClient smtp = new SmtpClient();
@@ -115,7 +115,7 @@ namespace ProjectDemo.Model.User
             smtp.EnableSsl = true;
             smtp.DeliveryMethod = SmtpDeliveryMethod.Network; 
             smtp.UseDefaultCredentials = false; 
-            smtp.Credentials = new NetworkCredential("yuzema1995@gmail.com", "Ma950522");  // account,psw
+            smtp.Credentials = new NetworkCredential("tuscmedia.au@gmail.com", "Ma950522");  // account,psw
             smtp.Host = "smtp.gmail.com";
 
             //recipient address
