@@ -38,11 +38,28 @@ namespace ProjectDemo.Controllers
         [HttpGet]
         public IActionResult GetUserName()
         {
-
-            string result = this.User.Identity.Name;
-
+            string stringId = this.User.Identity.Name;
+            int id = Convert.ToInt32(stringId);
+            string result = _userDataStore.GetUserName(id);
             return Ok(result);
         }
+        [AllowAnonymous]
+        [HttpGet("VerifyEmail/{id}/{verifyCode}")]
+        public IActionResult VerifyEmail(int id, string verifyCode)
+        {
+            var result = _userDataStore.VerifyEmail(id,verifyCode);
+            return Ok(result);
+        }
+
+        [HttpPost("UpdateEmail")]
+        public IActionResult UpdateEmailAddress([FromBody] string email)
+        {
+            string stringId = this.User.Identity.Name;
+            int id = Convert.ToInt32(stringId);
+            string result = _userDataStore.UpdateEmailAddress(id,email);
+            return Ok(result);
+        }
+
 
         [AllowAnonymous]
         [HttpPost("LogIn")]

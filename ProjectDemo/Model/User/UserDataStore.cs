@@ -6,8 +6,11 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Mail;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -30,6 +33,117 @@ namespace ProjectDemo.Model.User
             return _schoolDBContext.Users.ToList();
         }
 
+        public string GetUserName(int id)
+        {
+            UserDetail loginUser = _schoolDBContext.Users.Find(id);
+            return loginUser.Name;
+        }
+
+        public string VerifyEmail(int id, string verifyCode)
+        {
+            UserDetail selectedUser =_schoolDBContext.Users.Find(id);
+            if(selectedUser.EVExpiredDate < DateTime.Now)
+            {
+                selectedUser.Email = null;
+                selectedUser.Email_Verification = null;
+                _schoolDBContext.SaveChanges();
+                return "Your Verification Link is Expired! Please Update Email Again! ";
+            }
+            else
+            {
+                if(selectedUser.Email_Verification == verifyCode)
+                {
+                    selectedUser.Email_Status = 1;
+                    selectedUser.Email_Verification = null;
+                    _schoolDBContext.SaveChanges();
+                    return "Success, Your Email is Activated";
+                }
+                else
+                {
+                    return "Error!";
+                }
+            }
+        }
+
+        public string UpdateEmailAddress(int id, string email)
+        {
+            if(IsMailFormat(email))
+            {
+                UserDetail loginUser = _schoolDBContext.Users.Find(id);
+                loginUser.Email = email;
+                loginUser.Email_Status = 0;
+                string verificationCode = MD5(VerificationNumberGenerator.Generate());
+                loginUser.Email_Verification = verificationCode;
+                loginUser.EVExpiredDate = DateTime.Now.AddDays(1.0);
+                _schoolDBContext.SaveChanges();
+                string verifyURL = string.Format("http://localhost:5000/api/Users/VerifyEmail/{0}/{1}",id, verificationCode);
+                Mailbox(email, verifyURL);
+                return "Please Check Ur Email " + _schoolDBContext.Users.Find(id).Email;
+            }
+            else
+            {
+                return "please enter valid email address";
+            }
+        }
+
+        private static string MD5(string code)
+        {
+
+            string MD5code = ""; 
+
+            byte[] buffer = Encoding.UTF8.GetBytes(code);   //convert to Byte[]    
+
+            byte[] MD5buffer = new MD5CryptoServiceProvider().ComputeHash(buffer); //instantiation and encryption
+
+            foreach (byte item in MD5buffer)
+                //convert each byte[] to string, from duotricemary（32） to Hexadecimal（16)
+            {
+                MD5code += item.ToString("X2");                 
+            }
+            return MD5code;
+        }
+
+        private static bool Mailbox(string clientEmail, string verifyURL)
+        {
+
+            MailMessage mail = new MailMessage();
+            mail.From = new MailAddress("yuzema1995@gmail.com");
+
+            // The important part -- configuring the SMTP client
+            SmtpClient smtp = new SmtpClient();
+            smtp.Port = 587;   // You can try with 465 also
+            smtp.EnableSsl = true;
+            smtp.DeliveryMethod = SmtpDeliveryMethod.Network; 
+            smtp.UseDefaultCredentials = false; 
+            smtp.Credentials = new NetworkCredential("yuzema1995@gmail.com", "Ma950522");  // account,psw
+            smtp.Host = "smtp.gmail.com";
+
+            //recipient address
+            mail.To.Add(new MailAddress(clientEmail));
+            mail.Subject = "mailbox verification";
+            //Formatted mail body
+            mail.IsBodyHtml = true;
+
+            mail.Body = "click this link to verify ur Email : " + verifyURL;
+            smtp.Send(mail);
+            return true;
+        }
+
+        //checking email format
+        private static bool IsMailFormat(string mailFormat)
+        {
+            for (int i = 0; i < mailFormat.Length; ++i)
+            {
+                if (';' == mailFormat[i])
+                {
+                    return false;
+                }
+            }
+
+            return Regex.IsMatch(mailFormat, @"\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*");
+        }
+
+
         public string LogIn(string account, string password, string verificationNumber)
         {
             var users = _schoolDBContext.Users.ToList();
@@ -51,7 +165,7 @@ namespace ProjectDemo.Model.User
             {
                 return "user not exist or wrong password";
             }
-            else if (selectedUser.Status == 0)
+            else if (selectedUser.Phone_Status == 0)
             {
                 DateTime timeNow = DateTime.Now;
                 if (timeNow > selectedUser.VNExpiredDate)
@@ -63,7 +177,7 @@ namespace ProjectDemo.Model.User
 
                 if(verificationNumber == selectedUser.VerificationNumber)
                 {
-                    selectedUser.Status = 1;
+                    selectedUser.Phone_Status = 1;
                     selectedUser.VerificationNumber = null;
                     _schoolDBContext.SaveChanges();
                     return "Activation Successful!";
@@ -83,11 +197,12 @@ namespace ProjectDemo.Model.User
                  {
                      Subject = new ClaimsIdentity(new Claim[]
                      {
-                         new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                         new Claim(ClaimTypes.Name, user.Name),
+                         //new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                         //new Claim(ClaimTypes.Name, user.Name),
+                         new Claim(ClaimTypes.Name, user.Id.ToString()),
                          new Claim(ClaimTypes.Role, user.UserType)
                      }),
-                     Expires = DateTime.UtcNow.AddDays(7),
+                    Expires = DateTime.UtcNow.AddHours(10.0),
                      SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
                  };
                  var token = tokenHandler.CreateToken(tokenDescriptor);
@@ -122,7 +237,7 @@ namespace ProjectDemo.Model.User
             userDetail.Id = 0;
             userDetail.Account = userDetail.Account.ToLower();
             userDetail.Password = userDetail.Password.ToLower();
-            userDetail.Status = 0;
+            userDetail.Phone_Status = 0;
             userDetail.VerificationNumber = verificationNumber;
             userDetail.VNExpiredDate = expiredDateTime;
             _schoolDBContext.Users.Add(userDetail);
